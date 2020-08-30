@@ -22,11 +22,12 @@ module Jekyll
       ENV["LISTEN_GEM_DEBUGGING"] ||= "1" if options["verbose"]
 
       site ||= Jekyll::Site.new(options)
-      listener = build_listener(site, options)
+      listener_paths = listen_source_paths(site, options)
+      listener = build_listener(site, options, listener_paths)
       listener.start
 
       Jekyll.logger.info "Auto-regeneration:", "enabled for"
-      listen_source_paths(options).map do |path|
+      listener_paths.map do |path|
         Jekyll.logger.info "", "#{path}"
       end
 
@@ -45,9 +46,9 @@ module Jekyll
 
     private
 
-    def build_listener(site, options)
+    def build_listener(site, options, listener_paths)
       Listen.to(
-        *listen_source_paths(options),
+        *listener_paths,
         :ignore        => listen_ignore_paths(options),
         :force_polling => options["force_polling"],
         &listen_handler(site)
@@ -95,11 +96,26 @@ module Jekyll
       ].flatten
     end
 
-    def listen_source_paths(options)
+    def listen_source_paths(site, options)
       [
         options["source"],
         options["watch_dirs"],
-      ].flatten
+        find_theme_path(site),
+      ].flatten.delete_if(&:nil?)
+    end
+
+    def find_theme_path(site)
+      if site&.theme&.root&.nil?
+        Jekyll.logger.info "Locating Theme:", "No theme found to watch"
+        return
+      end
+      if site.theme.root.include? ".gem" or site.theme.root.include? "vendor"
+        Jekyll.logger.info "Locating Theme:", "Theme not local, skipping watch ❌"
+        Jekyll.logger.info "", "Run `bundle config local.#{site.theme.name} ~/path/to/theme` for local dev"
+        return
+      end
+      Jekyll.logger.info "Locating Theme:", "Local theme found ✅"
+      site.theme.root
     end
 
     # Paths to ignore for the watch option
