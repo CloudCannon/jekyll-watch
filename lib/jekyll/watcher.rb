@@ -25,7 +25,10 @@ module Jekyll
       listener = build_listener(site, options)
       listener.start
 
-      Jekyll.logger.info "Auto-regeneration:", "enabled for '#{options["source"]}'"
+      Jekyll.logger.info "Auto-regeneration:", "enabled for"
+      listen_source_paths(options).map do |path|
+        Jekyll.logger.info "", "#{path}"
+      end
 
       unless options["serving"]
         trap("INT") do
@@ -44,7 +47,7 @@ module Jekyll
 
     def build_listener(site, options)
       Listen.to(
-        options["source"],
+        *listen_source_paths(options),
         :ignore        => listen_ignore_paths(options),
         :force_polling => options["force_polling"],
         &listen_handler(site)
@@ -89,6 +92,13 @@ module Jekyll
         config_files(options),
         options["destination"],
         custom_excludes(options),
+      ].flatten
+    end
+
+    def listen_source_paths(options)
+      [
+        options["source"],
+        options["watch_dirs"],
       ].flatten
     end
 
