@@ -105,7 +105,7 @@ module Jekyll
     end
 
     def find_theme_path(site)
-      if site&.theme&.root&.nil?
+      unless site.theme&.root
         Jekyll.logger.info "Locating Theme:", "No theme found to watch"
         return
       end
