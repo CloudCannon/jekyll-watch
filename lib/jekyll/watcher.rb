@@ -100,6 +100,7 @@ module Jekyll
       [
         options["source"],
         options["watch_dirs"],
+        site&.config["watch_dirs"],
         find_theme_path(site),
       ].flatten.delete_if(&:nil?)
     end
